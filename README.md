@@ -92,3 +92,7 @@ Validación agregada: no permite clientes con RUT duplicado. Saldo neto negativo
 IA GPSRUTA mejorada: responde factura más antigua, 10 facturas más antiguas, deuda más antigua, facturas sobre 90 días y prioridad de cobranza.
 
 IA renombrada a LUXURY GPSRUTA.
+
+Agregado: auditoría automática, flujo de caja proyectado y calendario de cobranza.
+
+Agregado: Centro de Alertas Ejecutivas, Top 10 Clientes y Cliente VIP automático.

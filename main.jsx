@@ -185,6 +185,77 @@ const vencimientosPanel=useMemo(()=>{
  return{vencidas,porVencer15,totalPorCobrar,clientes2:clientes.filter(c=>c.pendientes===2),clientes3:clientes.filter(c=>c.pendientes===3),clientes4:clientes.filter(c=>c.pendientes>=4),ranking:clientes.slice(0,8)};
 },[data]);
 
+
+const auditData=useMemo(()=>{
+ const rutMap={};
+ data.clients.forEach(c=>{const r=String(c.rut||"").replace(/\./g,"").replace(/-/g,"").replace(/\s/g,"").toLowerCase(); if(r) rutMap[r]=(rutMap[r]||0)+1});
+ const duplicateRuts=Object.entries(rutMap).filter(([_,n])=>n>1).length;
+ const clientsNoEmail=data.clients.filter(c=>!c.email).length;
+ const clientsNoPhone=data.clients.filter(c=>!c.telefono).length;
+ const invoiceMap={};
+ data.invoices.forEach(i=>{const f=String(i.factura||"").trim().toLowerCase(); if(f) invoiceMap[f]=(invoiceMap[f]||0)+1});
+ const duplicateInvoices=Object.entries(invoiceMap).filter(([_,n])=>n>1).length;
+ const invoicesNoClient=data.invoices.filter(i=>!client(i.clienteId)).length;
+ const invoicesNoPdf=data.invoices.filter(i=>ist(i).l!=="Pagada"&&!data.attachments?.[i.id]).length;
+ const invoicesZero=data.invoices.filter(i=>!i.monto||+i.monto<=0).length;
+ const debtsNoProvider=data.debts.filter(d=>!d.proveedor).length;
+ const debtsOverdue=data.debts.filter(d=>d.estado!=="Pagada"&&days(d.vencimiento)<0).length;
+ const incomesNoCat=data.incomes.filter(i=>!i.categoria).length;
+ const expensesNoCat=data.expenses.filter(e=>!e.categoria).length;
+ const warnings=duplicateRuts+clientsNoEmail+clientsNoPhone+duplicateInvoices+invoicesNoClient+invoicesNoPdf+invoicesZero+debtsNoProvider+debtsOverdue+incomesNoCat+expensesNoCat;
+ const reviewed=data.clients.length+data.invoices.length+data.debts.length+data.incomes.length+data.expenses.length;
+ const score=Math.max(0,Math.round(100-(warnings/Math.max(1,reviewed))*100));
+ return {duplicateRuts,clientsNoEmail,clientsNoPhone,duplicateInvoices,invoicesNoClient,invoicesNoPdf,invoicesZero,debtsNoProvider,debtsOverdue,incomesNoCat,expensesNoCat,warnings,reviewed,score};
+},[data]);
+
+const cashProjection=useMemo(()=>{
+ const currentBalance=stats.saldo;
+ const expectedCollections=data.invoices.filter(i=>ist(i).l!=="Pagada"&&mk(i.vencimiento)===selectedMonth).reduce((s,i)=>s+(+i.monto||0),0);
+ const committedPayments=data.debts.filter(d=>d.estado!=="Pagada"&&mk(d.vencimiento)===selectedMonth).reduce((s,d)=>s+(+d.monto||0),0);
+ const projected=currentBalance+expectedCollections-committedPayments;
+ const level=projected<0?"ROJO":projected<committedPayments*.5?"AMARILLO":"VERDE";
+ return {currentBalance,expectedCollections,committedPayments,projected,level};
+},[data,stats,selectedMonth]);
+
+const calendarData=useMemo(()=>{
+ const items=data.invoices
+  .filter(i=>mk(i.vencimiento)===selectedMonth)
+  .sort((a,b)=>String(a.vencimiento).localeCompare(String(b.vencimiento)))
+  .map(i=>({date:i.vencimiento,factura:i.factura,cliente:client(i.clienteId)?.nombre||"",monto:+i.monto||0,estado:ist(i).l}));
+ const grouped={};
+ items.forEach(i=>{if(!grouped[i.date])grouped[i.date]=[]; grouped[i.date].push(i)});
+ return Object.entries(grouped).map(([date,items])=>({date,items,total:items.reduce((s,i)=>s+i.monto,0)})).slice(0,18);
+},[data,selectedMonth]);
+
+
+const executiveData=useMemo(()=>{
+ const vencidas=data.invoices.filter(i=>ist(i).l==="Vencida");
+ const porVencer=data.invoices.filter(i=>ist(i).l!=="Pagada"&&days(i.vencimiento)>=0&&days(i.vencimiento)<=15);
+ const totalPorCobrar=data.invoices.filter(i=>ist(i).l!=="Pagada").reduce((s,i)=>s+(+i.monto||0),0);
+ const clientes=data.clients.map(c=>{
+   const inv=data.invoices.filter(i=>+i.clienteId===+c.id);
+   const pagadas=inv.filter(i=>ist(i).l==="Pagada");
+   const pendientes=inv.filter(i=>ist(i).l!=="Pagada");
+   const venc=inv.filter(i=>ist(i).l==="Vencida");
+   const facturacion=inv.reduce((s,i)=>s+(+i.monto||0),0);
+   const morosidad=pendientes.reduce((s,i)=>s+(+i.monto||0),0);
+   const puntualidad=inv.length?Math.round((pagadas.length/inv.length)*100):0;
+   const vip=inv.length>=6&&venc.length===0&&pendientes.length===0;
+   return {...c,facturacion,morosidad,puntualidad,vip,vencidas:venc.length,pendientes:pendientes.length};
+ });
+ return{
+   vencidas:vencidas.length,
+   porVencer:porVencer.length,
+   totalPorCobrar,
+   altoRiesgo:clientes.filter(c=>c.vencidas>=4).length,
+   premium:clientes.filter(c=>c.pendientes===0&&c.vencidas===0).length,
+   vip:clientes.filter(c=>c.vip).length,
+   topFacturacion:[...clientes].sort((a,b)=>b.facturacion-a.facturacion).slice(0,10),
+   topMorosidad:[...clientes].filter(c=>c.morosidad>0).sort((a,b)=>b.morosidad-a.morosidad).slice(0,10),
+   topPuntualidad:[...clientes].filter(c=>c.facturacion>0).sort((a,b)=>b.puntualidad-a.puntualidad).slice(0,10)
+ };
+},[data]);
+
 function aiMessage(i){return `Estimado cliente, se recuerda su Factura ${i.factura} por la suma de ${money(i.monto)}. Saludos Cordiales GpsRuta`}
 
 function saveClient(){
@@ -469,7 +540,25 @@ function askDashboardAI(){
     .sort((a,b)=>new Date(a.vencimiento||a.emision)-new Date(b.vencimiento||b.emision));
   const diasVencida=(i)=>Math.max(0,Math.abs(days(i.vencimiento)));
 
-  if(lower.includes("factura más antigua")||lower.includes("factura mas antigua")){
+  if(lower.includes("cliente vip")||lower.includes("clientes vip")||lower.includes("vip")){
+    answer=executiveData.vip?`Clientes VIP detectados:\n`+executiveData.topPuntualidad.filter(c=>c.vip).map(c=>`• ${c.nombre} · Puntualidad ${c.puntualidad}%`).join("\n"):"No hay clientes VIP detectados aún.";
+  }
+  else if(lower.includes("top 10")||lower.includes("ranking")||lower.includes("mayor facturación")||lower.includes("mayor facturacion")){
+    answer=`Top clientes GPSRUTA:\n\nMayor facturación:\n${executiveData.topFacturacion.slice(0,5).map((c,i)=>`${i+1}. ${c.nombre} · ${money(c.facturacion)}`).join("\n")}\n\nMayor morosidad:\n${executiveData.topMorosidad.slice(0,5).map((c,i)=>`${i+1}. ${c.nombre} · ${money(c.morosidad)}`).join("\n")}\n\nMayor puntualidad:\n${executiveData.topPuntualidad.slice(0,5).map((c,i)=>`${i+1}. ${c.nombre} · ${c.puntualidad}%`).join("\n")}`;
+  }
+  else if(lower.includes("alertas ejecutivas")||lower.includes("centro de alertas")){
+    answer=`Centro de alertas ejecutivas:\n• Facturas vencidas: ${executiveData.vencidas}\n• Por vencer 15 días: ${executiveData.porVencer}\n• Total por cobrar: ${money(executiveData.totalPorCobrar)}\n• Clientes alto riesgo: ${executiveData.altoRiesgo}\n• Clientes Premium: ${executiveData.premium}\n• Clientes VIP: ${executiveData.vip}`;
+  }
+  else if(lower.includes("auditoria")||lower.includes("auditoría")||lower.includes("inconsistencia")||lower.includes("errores")){
+    answer=`Auditoría GPSRUTA:\n• Registros revisados: ${auditData.reviewed}\n• Alertas detectadas: ${auditData.warnings}\n• Estado general: ${auditData.score}%\n\nDetalle:\n• RUT duplicados: ${auditData.duplicateRuts}\n• Facturas duplicadas: ${auditData.duplicateInvoices}\n• Facturas sin PDF: ${auditData.invoicesNoPdf}\n• Clientes sin correo: ${auditData.clientsNoEmail}\n• Deudas vencidas sin pago: ${auditData.debtsOverdue}`;
+  }
+  else if(lower.includes("flujo")||lower.includes("saldo próximo")||lower.includes("saldo proximo")||lower.includes("proyección")||lower.includes("proyeccion")){
+    answer=`Flujo de caja proyectado ${ml(selectedMonth)}:\n• Saldo actual del mes: ${money(cashProjection.currentBalance)}\n• Cobros esperados: ${money(cashProjection.expectedCollections)}\n• Pagos comprometidos: ${money(cashProjection.committedPayments)}\n• Saldo proyectado: ${money(cashProjection.projected)}\n• Semáforo: ${cashProjection.level}`;
+  }
+  else if(lower.includes("calendario")||lower.includes("vence esta semana")||lower.includes("vence este mes")||lower.includes("cobrar mañana")){
+    answer=calendarData.length?`Calendario de cobranza ${ml(selectedMonth)}:\n`+calendarData.slice(0,10).map(d=>`• ${d.date}: ${d.items.length} factura(s) · ${money(d.total)}`).join("\n"):"No hay vencimientos registrados para el mes seleccionado.";
+  }
+  else if(lower.includes("factura más antigua")||lower.includes("factura mas antigua")){
     const f=facturasPendientes[0];
     answer=f?`La factura más antigua pendiente es:\n• Factura: ${f.factura}\n• Cliente: ${client(f.clienteId)?.nombre||""}\n• Emisión: ${f.emision}\n• Vencimiento: ${f.vencimiento}\n• Monto: ${money(f.monto)}\n• Antigüedad: ${diasVencida(f)} día(s) desde vencimiento.`:"No hay facturas pendientes.";
   }
@@ -634,6 +723,20 @@ return <div className="app"><aside><Logo/><div className="admin"><User size={24}
   </div>
 </section>}
 
+
+{tab==="dashboard"&&<section className="executiveAlertsPanel">
+  <div className="execAlert red"><b>{executiveData.vencidas}</b><span>Facturas vencidas</span></div>
+  <div className="execAlert yellow"><b>{executiveData.porVencer}</b><span>Por vencer 15 días</span></div>
+  <div className="execAlert green"><b>{money(executiveData.totalPorCobrar)}</b><span>Total por cobrar</span></div>
+  <div className="execAlert blue"><b>{executiveData.altoRiesgo}</b><span>Alto riesgo</span></div>
+  <div className="execAlert gold"><b>{executiveData.premium}</b><span>Premium</span></div>
+  <div className="execAlert vip"><b>{executiveData.vip}</b><span>VIP</span></div>
+</section>}
+{tab==="dashboard"&&<section className="top10Panel">
+  <div className="card holoCard topCard"><div className="holoBadge small">TOP 10</div><h2>Mayor facturación</h2><div className="topList">{executiveData.topFacturacion.map((c,i)=><div className="topItem" key={c.id}><b>{i+1}</b><span>{c.nombre}</span><strong>{money(c.facturacion)}</strong></div>)}</div></div>
+  <div className="card holoCard topCard"><div className="holoBadge small">MOROSIDAD</div><h2>Mayor deuda</h2><div className="topList">{executiveData.topMorosidad.length?executiveData.topMorosidad.map((c,i)=><div className="topItem danger" key={c.id}><b>{i+1}</b><span>{c.nombre}</span><strong>{money(c.morosidad)}</strong></div>):<p>No hay morosidad registrada.</p>}</div></div>
+  <div className="card holoCard topCard"><div className="holoBadge small">VIP</div><h2>Puntualidad / Clientes VIP</h2><div className="topList">{executiveData.topPuntualidad.map((c,i)=><div className={`topItem ${c.vip?"vipClient":""}`} key={c.id}><b>{c.vip?"🏆":i+1}</b><span>{c.nombre}</span><strong>{c.puntualidad}%</strong></div>)}</div></div>
+</section>}
 {tab==="dashboard"&&<section className="panelVencimientosPro">
   <div className="card holoCard vencimientosMain">
     <div className="holoBadge small">CONTROL VENCIMIENTOS</div>
@@ -662,6 +765,38 @@ return <div className="app"><aside><Logo/><div className="admin"><User size={24}
     <h2>Block de notas / tareas por hacer</h2>
     <div className="taskInput"><input value={taskText} onChange={e=>setTaskText(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addTask()}} placeholder="Agregar tarea o nota..."/><button onClick={addTask}>Agregar</button></div>
     <div className="taskList">{(data.tasks||[]).length?(data.tasks||[]).slice(0,12).map(t=><div className={`taskItem ${t.done?"done":""}`} key={t.id}><button onClick={()=>toggleTask(t.id)}>{t.done?"✅":"⬜"}</button><div><b>{t.text}</b><span>{t.createdAt}</span></div><button className="deleteTask" onClick={()=>deleteTask(t.id)}>✕</button></div>):<p>No hay tareas pendientes.</p>}</div>
+  </div>
+</section>}
+
+{tab==="dashboard"&&<section className="auditoriaFlujoCalendarioPanel">
+  <div className="card holoCard auditPanel">
+    <div className="holoBadge small"><ShieldAlert size={14}/> AUDITORÍA</div>
+    <h2>Auditoría automática</h2>
+    <div className="auditScore"><b>{auditData.score}%</b><span>Estado general del sistema</span></div>
+    <div className="auditGrid">
+      <div><b>{auditData.warnings}</b><span>Alertas</span></div>
+      <div><b>{auditData.invoicesNoPdf}</b><span>Facturas sin PDF</span></div>
+      <div><b>{auditData.duplicateInvoices}</b><span>Facturas duplicadas</span></div>
+      <div><b>{auditData.clientsNoEmail}</b><span>Clientes sin correo</span></div>
+    </div>
+  </div>
+  <div className={`card holoCard flujoPanel ${cashProjection.level.toLowerCase()}`}>
+    <div className="holoBadge small">FLUJO CAJA</div>
+    <h2>Flujo de caja proyectado</h2>
+    <div className="flujoRows">
+      <div><span>Saldo actual</span><b>{money(cashProjection.currentBalance)}</b></div>
+      <div><span>Cobros esperados</span><b>{money(cashProjection.expectedCollections)}</b></div>
+      <div><span>Pagos comprometidos</span><b>{money(cashProjection.committedPayments)}</b></div>
+      <div className="projected"><span>Saldo proyectado</span><b>{money(cashProjection.projected)}</b></div>
+    </div>
+    <div className={`cashLight ${cashProjection.level.toLowerCase()}`}>{cashProjection.level}</div>
+  </div>
+  <div className="card holoCard calendarPanel">
+    <div className="holoBadge small"><CalendarCheck size={14}/> CALENDARIO</div>
+    <h2>Calendario de cobranza</h2>
+    <div className="calendarList">
+      {calendarData.length?calendarData.map(d=><div className="calendarDay" key={d.date}><div><b>{d.date}</b><span>{d.items.length} factura(s)</span></div><strong>{money(d.total)}</strong></div>):<p>No hay vencimientos para el mes seleccionado.</p>}
+    </div>
   </div>
 </section>}
 {tab==="clientes"&&<section className="two"><div className="card clientFormSticky"><h2>{editingClient?"Editar cliente":"Nuevo cliente"}</h2>
