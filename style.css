@@ -2272,3 +2272,20 @@ select:focus{
   .commitmentKpis{grid-template-columns:1fr}
   .commitmentItem{grid-template-columns:1fr}
 }
+
+
+/* RECUPERACIÓN ESTABLE: evita pantalla negra */
+html,body,#root{
+  min-height:100%;
+}
+#root:empty{
+  min-height:100vh;
+  background:#000;
+}
+.loginPage,.app{
+  min-height:100vh!important;
+}
+.fatalError button+button{
+  margin-left:8px;
+  background:linear-gradient(135deg,#FFD43B,#ff9500)!important;
+}

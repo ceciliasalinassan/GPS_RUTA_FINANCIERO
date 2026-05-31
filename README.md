@@ -100,3 +100,5 @@ Agregado: Centro de Alertas Ejecutivas, Top 10 Clientes y Cliente VIP automátic
 Corrección aplicada: se agregaron los íconos faltantes CalendarCheck, ShieldAlert y ClipboardCheck para evitar el error visual del sistema.
 
 Agregado: compromisos de pago, meta de cobranza mensual y gestión/historial de cobranza.
+
+Versión recuperación estable: carga inicial robusta para evitar pantalla negra. Build no probado: Command '['npm', '--prefix', '/mnt/data/GPS_RUTA_RECUPERACION_ESTABLE', 'install', '--silent']' returned non-zero exit status 1.

@@ -1,8 +1,8 @@
 
 import React,{Component,useEffect,useMemo,useState}from"react";
 import{createRoot}from"react-dom/client";
-import{AlertTriangle,Bell,CalendarDays,CheckCircle,Clock,CreditCard,Edit,Eye,FileText,Lock,LogOut,Mail,Paperclip,Plus,Search,ShieldCheck,Trash2,TrendingDown,TrendingUp,UploadCloud,User,Users,Wallet,Save,Building2,MessageCircle,Bot,Sparkles,Download,Upload,HardDrive,CalendarCheck,ShieldAlert,ClipboardCheck}from"lucide-react";
-import{ComposedChart,Bar,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid,PieChart,Pie,Cell,Legend,RadarChart,PolarGrid,PolarAngleAxis,PolarRadiusAxis,Radar}from"recharts";
+import{AlertTriangle,Bell,Bot,Building2,CalendarCheck,CalendarDays,CheckCircle,ClipboardCheck,Clock,CreditCard,Download,Edit,Eye,FileText,HardDrive,Lock,LogOut,Mail,MessageCircle,Paperclip,Plus,Save,Search,ShieldAlert,ShieldCheck,Sparkles,Trash2,TrendingDown,TrendingUp,Upload,UploadCloud,User,Users,Wallet}from"lucide-react";
+import{Bar,CartesianGrid,Cell,ComposedChart,Legend,Line,Pie,PieChart,PolarAngleAxis,PolarGrid,PolarRadiusAxis,Radar,RadarChart,ResponsiveContainer,Tooltip,XAxis,YAxis}from"recharts";
 import * as XLSX from "xlsx";
 import"./style.css";
 
@@ -28,7 +28,16 @@ const money=v=>new Intl.NumberFormat("es-CL",{style:"currency",currency:"CLP",ma
 const today=()=>new Date().toISOString().slice(0,10);
 const mk=d=>(d||today()).slice(0,7);
 const ml=k=>{let[a,b]=k.split("-");return `${b}/${a}`};
-function load(){try{let s=JSON.parse(localStorage.getItem(KEY));if(!s)return seed;return{...seed,...s,clients:(s.clients||seed.clients).map(c=>({giro:"",...c})),incomes:s.incomes||seed.incomes,expenses:s.expenses||seed.expenses,debts:s.debts||seed.debts}}catch{return seed}}
+function load(){
+  try{
+    const stored=localStorage.getItem(KEY);
+    if(!stored)return normalizeData(seed);
+    return normalizeData(JSON.parse(stored));
+  }catch(e){
+    console.error("GPSRUTA: datos locales corruptos",e);
+    return normalizeData(seed);
+  }
+}
 function days(d){let n=new Date();n.setHours(0,0,0,0);return Math.ceil((new Date(d+"T00:00:00")-n)/86400000)}
 function ist(i){if(i.estado==="Pagada")return{l:"Pagada",c:"ok",I:CheckCircle};let d=days(i.vencimiento);if(i.estado==="Vencida"||d<0)return{l:"Vencida",c:"bad",I:AlertTriangle};if(d<=3&&d>=0)return{l:"Por vencer",c:"warn",I:Clock};return{l:"Pendiente",c:"soft",I:FileText}}
 function isVencida15(i){
@@ -77,7 +86,7 @@ class ErrorBoundary extends Component{
           <h1>GPSRUTA</h1>
           <h2>Se detectó un error visual del sistema</h2>
           <p>La información guardada no se ha perdido. Recarga la página o importa tu último respaldo.</p>
-          <button onClick={()=>location.reload()}>Recargar sistema</button>
+          <button onClick={()=>location.reload()}>Recargar sistema</button><button onClick={()=>{localStorage.removeItem(KEY);sessionStorage.clear();location.reload()}}>Reiniciar datos locales</button>
         </div>
       </div>;
     }
@@ -85,9 +94,9 @@ class ErrorBoundary extends Component{
   }
 }
 
-function App(){const[logged,setLogged]=useState(()=>sessionStorage.getItem(SESSION)==="1"),[data,setData]=useState(load),[tab,setTab]=useState("dashboard"),[clock,setClock]=useState(new Date()),[search,setSearch]=useState(""),[taskText,setTaskText]=useState(""),[commitmentForm,setCommitmentForm]=useState({clienteId:"",facturaId:"",fecha:today(),monto:"",observacion:"",estado:"Pendiente"}),[collectionForm,setCollectionForm]=useState({clienteId:"",facturaId:"",fecha:today(),tipo:"Llamado",resultado:"No contesta",proximaGestion:today(),responsable:"",observacion:""}),[goalAmount,setGoalAmount]=useState(String(data.collectionGoal?.amount||"")),[historyQuickFilter,setHistoryQuickFilter]=useState(""),[historyMonthFilter,setHistoryMonthFilter]=useState("Todos"),[historyStatusFilter,setHistoryStatusFilter]=useState("Todos"),[alertSearch,setAlertSearch]=useState(""),[reminderStatusFilter,setReminderStatusFilter]=useState("Todas"),[saved,setSaved]=useState("Sin cambios"),[selectedInvoiceId,setSelectedInvoiceId]=useState(null),[selectedMonth,setSelectedMonth]=useState(mk(today())),[invoiceFolderMonth,setInvoiceFolderMonth]=useState("Todas"),[invoiceStatusFilter,setInvoiceStatusFilter]=useState("Vencida"),[invoicePage,setInvoicePage]=useState(1),[chatOpen,setChatOpen]=useState(true),[chatInput,setChatInput]=useState(""),[emailSending,setEmailSending]=useState(false),[chatMessages,setChatMessages]=useState([{role:"ia",text:"Hola, soy la LUXURY GPSRUTA. Pregúntame: ¿quién debe más?, ¿cuál es la factura más antigua?, ¿facturas vencidas?, ¿clientes premium?, ¿resumen del mes?"}]);
+function App(){const[logged,setLogged]=useState(()=>sessionStorage.getItem(SESSION)==="1"),[data,setData]=useState(load),[tab,setTab]=useState("dashboard"),[clock,setClock]=useState(new Date()),[search,setSearch]=useState(""),[taskText,setTaskText]=useState(""),[commitmentForm,setCommitmentForm]=useState({clienteId:"",facturaId:"",fecha:today(),monto:"",observacion:"",estado:"Pendiente"}),[collectionForm,setCollectionForm]=useState({clienteId:"",facturaId:"",fecha:today(),tipo:"Llamado",resultado:"No contesta",proximaGestion:today(),responsable:"",observacion:""}),[goalAmount,setGoalAmount]=useState(String((data.collectionGoal&&data.collectionGoal.amount)||"")),[historyQuickFilter,setHistoryQuickFilter]=useState(""),[historyMonthFilter,setHistoryMonthFilter]=useState("Todos"),[historyStatusFilter,setHistoryStatusFilter]=useState("Todos"),[alertSearch,setAlertSearch]=useState(""),[reminderStatusFilter,setReminderStatusFilter]=useState("Todas"),[saved,setSaved]=useState("Sin cambios"),[selectedInvoiceId,setSelectedInvoiceId]=useState(null),[selectedMonth,setSelectedMonth]=useState(mk(today())),[invoiceFolderMonth,setInvoiceFolderMonth]=useState("Todas"),[invoiceStatusFilter,setInvoiceStatusFilter]=useState("Vencida"),[invoicePage,setInvoicePage]=useState(1),[chatOpen,setChatOpen]=useState(true),[chatInput,setChatInput]=useState(""),[emailSending,setEmailSending]=useState(false),[chatMessages,setChatMessages]=useState([{role:"ia",text:"Hola, soy la LUXURY GPSRUTA. Pregúntame: ¿quién debe más?, ¿cuál es la factura más antigua?, ¿facturas vencidas?, ¿clientes premium?, ¿resumen del mes?"}]);
 const[clientForm,setClientForm]=useState({nombre:"",rut:"",giro:"",telefono:"569",email:"",direccion:"",contacto:""}),[invoiceForm,setInvoiceForm]=useState({clienteId:"",factura:"",emision:today(),vencimiento:today(),monto:"",estado:"Pendiente",detalle:""}),[incomeForm,setIncomeForm]=useState({fecha:today(),categoria:"Pago de factura",descripcion:"",monto:"",facturaId:""}),[expenseForm,setExpenseForm]=useState({fecha:today(),categoria:"Pago instalador",descripcion:"",monto:"",debtId:"",numeroFacturaPago:""}),[debtForm,setDebtForm]=useState({fecha:today(),proveedor:"",emailProveedor:"",categoria:"Compra de equipos",descripcion:"",monto:"",vencimiento:today(),estado:"Pendiente"}),[editingClient,setEditingClient]=useState(null),[editingInvoice,setEditingInvoice]=useState(null);
-useEffect(()=>{localStorage.setItem(KEY,JSON.stringify(data));setSaved(new Date().toLocaleTimeString("es-CL"))},[data]);
+useEffect(()=>{localStorage.setItem(KEY,JSON.stringify(data));setSaved(new Date().toLocaleTimeString("es-CL",{hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit"}))},[data]);
 useEffect(()=>{let t=setInterval(()=>setClock(new Date()),1000);return()=>clearInterval(t)},[]);
 useEffect(()=>{setInvoicePage(1)},[invoiceFolderMonth,invoiceStatusFilter,search]);
 const client=id=>data.clients.find(c=>+c.id===+id);
@@ -313,7 +322,7 @@ function canSendInvoice(id){
 
 function manualSave(){
   localStorage.setItem(KEY, JSON.stringify(data));
-  setSaved(new Date().toLocaleTimeString("es-CL"));
+  setSaved(new Date().toLocaleTimeString("es-CL",{hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit"}));
   alert("Información guardada correctamente.");
 }
 function exportBackup(){
@@ -956,3 +965,21 @@ function Table({rows,type,setData,data,quickFilter="",monthFilter="Todos",status
  return <div className="historyBox"><div className="historyMiniStats"><b>{sorted.length}</b><span>registros</span><strong>{money(total)}</strong></div><div className="tableWrap historyScroll"><table><thead><tr><th>Fecha</th><th>Mes/Año</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th>Acciones</th></tr></thead><tbody>{sorted.map(r=><tr key={r.id}><td>{r.fecha||r.vencimiento}</td><td>{ml(mk(r.fecha||r.vencimiento))}</td><td>{r.categoria}{r.proveedor&&<small>{r.proveedor}</small>}{r.emailProveedor&&<small>{r.emailProveedor}</small>}</td><td>{r.descripcion}{r.estado&&<small>Estado: {r.estado}</small>}</td><td>{money(r.monto)}</td><td>{type==="debts"&&<a className="icon mail" href={debtEmail(r)} title="Correo manual deuda"><Mail size={17}/></a>}{type==="debts"&&typeof sendAutoDebt==="function"&&<button className="icon autoMailIcon" onClick={()=>sendAutoDebt(r)} title="Enviar deuda automático">AUTO</button>}<button className="icon trash" onClick={()=>setData({...data,[type]:(data[type]||[]).filter(x=>x.id!==r.id)})}><Trash2 size={17}/></button></td></tr>)}</tbody></table></div></div>}
 
 createRoot(document.getElementById("root")).render(<ErrorBoundary><App/></ErrorBoundary>);
+function normalizeData(raw){
+  const base={...seed,...(raw||{})};
+  return{
+    ...base,
+    clients:Array.isArray(base.clients)?base.clients.map(c=>({id:Date.now()+Math.random(),nombre:"",rut:"",giro:"",telefono:"",email:"",direccion:"",contacto:"",...c})):[],
+    invoices:Array.isArray(base.invoices)?base.invoices:[],
+    incomes:Array.isArray(base.incomes)?base.incomes:[],
+    expenses:Array.isArray(base.expenses)?base.expenses:[],
+    debts:Array.isArray(base.debts)?base.debts:[],
+    attachments:base.attachments||{},
+    tasks:Array.isArray(base.tasks)?base.tasks:[],
+    commitments:Array.isArray(base.commitments)?base.commitments:[],
+    collectionActions:Array.isArray(base.collectionActions)?base.collectionActions:[],
+    collectionGoal:base.collectionGoal||{month:mk(today()),amount:0}
+  };
+}
+
+
