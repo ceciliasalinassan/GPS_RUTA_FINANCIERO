@@ -1,0 +1,9 @@
+VERSIÓN LIVIANA PARA VERCEL
+
+Esta versión elimina el backend de Outlook automático para que el deployment sea más rápido.
+
+Mantiene todo el sistema:
+Dashboard, IA Luxury GPSRUTA, clientes, facturas, ingresos, egresos, deudas, reportes Excel, WhatsApp, correo manual, historiales, filtros, auditoría, calendario y alertas.
+
+Desactivado solo:
+Envío automático real Outlook desde servidor.

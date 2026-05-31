@@ -646,21 +646,7 @@ function askDashboardAI(){
 }
 
 async function sendAutomaticEmail(payload){
-  try{
-    setEmailSending(true);
-    const resp = await fetch("/api/send-email",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(payload)
-    });
-    const result = await resp.json();
-    if(!resp.ok || !result.ok) throw new Error(result.error || "No se pudo enviar el correo.");
-    alert("Correo enviado correctamente desde Outlook.");
-  }catch(err){
-    alert("Error al enviar correo automático: "+(err.message || err));
-  }finally{
-    setEmailSending(false);
-  }
+  alert("Versión liviana Vercel: usa correo manual o WhatsApp. El envío automático Outlook queda desactivado para acelerar el deployment.");
 }
 function sendAutoReminder(i,c){
   if(!c?.email){alert("El cliente no tiene correo registrado.");return;}
