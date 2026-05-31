@@ -1,7 +1,7 @@
 {
   "name": "gpsruta-financiero-pro",
+  "version": "3.0.0",
   "private": true,
-  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,12 +10,12 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "lucide-react": "latest",
-    "recharts": "latest",
-    "xlsx": "latest"
+    "vite": "8.0.14",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "lucide-react": "0.562.0",
+    "recharts": "3.6.0",
+    "xlsx": "0.18.5"
   },
   "devDependencies": {}
 }

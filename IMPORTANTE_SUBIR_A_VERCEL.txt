@@ -1,0 +1,26 @@
+VERSIÓN DEPLOY RÁPIDO GPSRUTA
+
+Esta versión está optimizada para Vercel:
+- Sin backend Outlook automático
+- Sin nodemailer
+- Dependencias fijas
+- Vite configurado
+- package-lock generado si fue posible
+
+Si Vercel queda en 'Deployment queued' por más de 10 minutos:
+1. Presiona Cancel Deployment
+2. Espera 1 minuto
+3. Vuelve a subir esta versión
+4. Si sigue igual, el problema es cola/servicio de Vercel, no el sistema.
+
+Mantiene:
+- Dashboard
+- IA LUXURY GPSRUTA
+- Facturas
+- Clientes
+- Reportes Excel
+- Ingresos/Egresos/Deudas
+- Alertas
+- Calendario
+- Auditoría
+- Cobros/Recordatorios manuales
