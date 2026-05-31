@@ -1,0 +1,1 @@
+GPSRUTA ULTRA LIVIANO STATIC: subir solo estos archivos a Vercel. No requiere npm, no requiere build, no usa package.json.
