@@ -22,7 +22,7 @@ invoices:[
 incomes:[{id:1,fecha:"2026-05-10",categoria:"Pago de factura",descripcion:"Pago FAC-2026-003",monto:950000,facturaId:3}],
 expenses:[{id:1,fecha:"2026-05-11",categoria:"Pago plataforma",descripcion:"Servidor",monto:180000},{id:2,fecha:"2026-05-13",categoria:"Pago contadora",descripcion:"Honorarios contables",monto:75000}],
 debts:[{id:1,fecha:"2026-05-15",proveedor:"Proveedor GPS",emailProveedor:"proveedor@gps.cl",categoria:"Compra de equipos",descripcion:"Equipos GPS por pagar",monto:1200000,vencimiento:"2026-05-30",estado:"Pendiente"}],
-attachments:{},tasks:[]};
+attachments:{},tasks:[],commitments:[],collectionActions:[],collectionGoal:{month:mk(today()),amount:0}};
 
 const money=v=>new Intl.NumberFormat("es-CL",{style:"currency",currency:"CLP",maximumFractionDigits:0}).format(+v||0);
 const today=()=>new Date().toISOString().slice(0,10);
@@ -85,7 +85,7 @@ class ErrorBoundary extends Component{
   }
 }
 
-function App(){const[logged,setLogged]=useState(()=>sessionStorage.getItem(SESSION)==="1"),[data,setData]=useState(load),[tab,setTab]=useState("dashboard"),[clock,setClock]=useState(new Date()),[search,setSearch]=useState(""),[taskText,setTaskText]=useState(""),[historyQuickFilter,setHistoryQuickFilter]=useState(""),[historyMonthFilter,setHistoryMonthFilter]=useState("Todos"),[historyStatusFilter,setHistoryStatusFilter]=useState("Todos"),[alertSearch,setAlertSearch]=useState(""),[reminderStatusFilter,setReminderStatusFilter]=useState("Todas"),[saved,setSaved]=useState("Sin cambios"),[selectedInvoiceId,setSelectedInvoiceId]=useState(null),[selectedMonth,setSelectedMonth]=useState(mk(today())),[invoiceFolderMonth,setInvoiceFolderMonth]=useState("Todas"),[invoiceStatusFilter,setInvoiceStatusFilter]=useState("Vencida"),[invoicePage,setInvoicePage]=useState(1),[chatOpen,setChatOpen]=useState(true),[chatInput,setChatInput]=useState(""),[emailSending,setEmailSending]=useState(false),[chatMessages,setChatMessages]=useState([{role:"ia",text:"Hola, soy la LUXURY GPSRUTA. Pregúntame: ¿quién debe más?, ¿cuál es la factura más antigua?, ¿facturas vencidas?, ¿clientes premium?, ¿resumen del mes?"}]);
+function App(){const[logged,setLogged]=useState(()=>sessionStorage.getItem(SESSION)==="1"),[data,setData]=useState(load),[tab,setTab]=useState("dashboard"),[clock,setClock]=useState(new Date()),[search,setSearch]=useState(""),[taskText,setTaskText]=useState(""),[commitmentForm,setCommitmentForm]=useState({clienteId:"",facturaId:"",fecha:today(),monto:"",observacion:"",estado:"Pendiente"}),[collectionForm,setCollectionForm]=useState({clienteId:"",facturaId:"",fecha:today(),tipo:"Llamado",resultado:"No contesta",proximaGestion:today(),responsable:"",observacion:""}),[goalAmount,setGoalAmount]=useState(String(data.collectionGoal?.amount||"")),[historyQuickFilter,setHistoryQuickFilter]=useState(""),[historyMonthFilter,setHistoryMonthFilter]=useState("Todos"),[historyStatusFilter,setHistoryStatusFilter]=useState("Todos"),[alertSearch,setAlertSearch]=useState(""),[reminderStatusFilter,setReminderStatusFilter]=useState("Todas"),[saved,setSaved]=useState("Sin cambios"),[selectedInvoiceId,setSelectedInvoiceId]=useState(null),[selectedMonth,setSelectedMonth]=useState(mk(today())),[invoiceFolderMonth,setInvoiceFolderMonth]=useState("Todas"),[invoiceStatusFilter,setInvoiceStatusFilter]=useState("Vencida"),[invoicePage,setInvoicePage]=useState(1),[chatOpen,setChatOpen]=useState(true),[chatInput,setChatInput]=useState(""),[emailSending,setEmailSending]=useState(false),[chatMessages,setChatMessages]=useState([{role:"ia",text:"Hola, soy la LUXURY GPSRUTA. Pregúntame: ¿quién debe más?, ¿cuál es la factura más antigua?, ¿facturas vencidas?, ¿clientes premium?, ¿resumen del mes?"}]);
 const[clientForm,setClientForm]=useState({nombre:"",rut:"",giro:"",telefono:"569",email:"",direccion:"",contacto:""}),[invoiceForm,setInvoiceForm]=useState({clienteId:"",factura:"",emision:today(),vencimiento:today(),monto:"",estado:"Pendiente",detalle:""}),[incomeForm,setIncomeForm]=useState({fecha:today(),categoria:"Pago de factura",descripcion:"",monto:"",facturaId:""}),[expenseForm,setExpenseForm]=useState({fecha:today(),categoria:"Pago instalador",descripcion:"",monto:"",debtId:"",numeroFacturaPago:""}),[debtForm,setDebtForm]=useState({fecha:today(),proveedor:"",emailProveedor:"",categoria:"Compra de equipos",descripcion:"",monto:"",vencimiento:today(),estado:"Pendiente"}),[editingClient,setEditingClient]=useState(null),[editingInvoice,setEditingInvoice]=useState(null);
 useEffect(()=>{localStorage.setItem(KEY,JSON.stringify(data));setSaved(new Date().toLocaleTimeString("es-CL"))},[data]);
 useEffect(()=>{let t=setInterval(()=>setClock(new Date()),1000);return()=>clearInterval(t)},[]);
@@ -255,6 +255,23 @@ const executiveData=useMemo(()=>{
    topPuntualidad:[...clientes].filter(c=>c.facturacion>0).sort((a,b)=>b.puntualidad-a.puntualidad).slice(0,10)
  };
 },[data]);
+
+
+const cobranzaProData=useMemo(()=>{
+ const commitments=data.commitments||[];
+ const actions=data.collectionActions||[];
+ const todayStr=today();
+ const dueToday=commitments.filter(c=>c.estado==="Pendiente"&&c.fecha===todayStr);
+ const overdue=commitments.filter(c=>c.estado==="Pendiente"&&c.fecha<todayStr);
+ const committedAmount=commitments.filter(c=>c.estado==="Pendiente"&&mk(c.fecha)===selectedMonth).reduce((s,c)=>s+(+c.monto||0),0);
+ const goalAmount=+(data.collectionGoal?.amount||0);
+ const collected=fm.incomes.reduce((s,i)=>s+(+i.monto||0),0);
+ const goalPercent=goalAmount?Math.round((collected/goalAmount)*100):0;
+ const pendingActions=actions.filter(a=>a.proximaGestion&&a.proximaGestion<=todayStr);
+ const promised=actions.filter(a=>String(a.resultado||"").toLowerCase().includes("promete"));
+ const noResponse=actions.filter(a=>String(a.resultado||"").toLowerCase().includes("no contesta"));
+ return {dueToday,overdue,committedAmount,goalAmount,collected,goalPercent,pendingActions,promised,noResponse};
+},[data,selectedMonth,fm.incomes]);
 
 function aiMessage(i){return `Estimado cliente, se recuerda su Factura ${i.factura} por la suma de ${money(i.monto)}. Saludos Cordiales GpsRuta`}
 
@@ -540,7 +557,16 @@ function askDashboardAI(){
     .sort((a,b)=>new Date(a.vencimiento||a.emision)-new Date(b.vencimiento||b.emision));
   const diasVencida=(i)=>Math.max(0,Math.abs(days(i.vencimiento)));
 
-  if(lower.includes("cliente vip")||lower.includes("clientes vip")||lower.includes("vip")){
+  if(lower.includes("compromiso")||lower.includes("compromisos")){
+    answer=`Compromisos de pago:\n• Vencen hoy: ${cobranzaProData.dueToday.length}\n• Vencidos/incumplidos: ${cobranzaProData.overdue.length}\n• Monto comprometido del mes: ${money(cobranzaProData.committedAmount)}${cobranzaProData.dueToday.length?"\n\nHoy:\n"+cobranzaProData.dueToday.map(c=>`• ${client(c.clienteId)?.nombre||""} · ${money(c.monto)} · ${c.observacion||""}`).join("\n"):""}`;
+  }
+  else if(lower.includes("meta")||lower.includes("cobranza mensual")){
+    answer=`Meta de cobranza ${ml(selectedMonth)}:\n• Meta: ${money(cobranzaProData.goalAmount)}\n• Cobrado: ${money(cobranzaProData.collected)}\n• Avance: ${cobranzaProData.goalPercent}%\n• Falta: ${money(Math.max(0,cobranzaProData.goalAmount-cobranzaProData.collected))}`;
+  }
+  else if(lower.includes("contactar")||lower.includes("gestiones")||lower.includes("llamar hoy")||lower.includes("no responden")||lower.includes("prometieron pago")){
+    answer=`Gestión de cobranza:\n• Gestiones pendientes hoy/vencidas: ${cobranzaProData.pendingActions.length}\n• Clientes que prometieron pago: ${cobranzaProData.promised.length}\n• Gestiones sin respuesta: ${cobranzaProData.noResponse.length}${cobranzaProData.pendingActions.length?"\n\nPendientes:\n"+cobranzaProData.pendingActions.slice(0,8).map(a=>`• ${client(a.clienteId)?.nombre||""} · ${a.tipo} · ${a.resultado} · próxima ${a.proximaGestion}`).join("\n"):""}`;
+  }
+  else if(lower.includes("cliente vip")||lower.includes("clientes vip")||lower.includes("vip")){
     answer=executiveData.vip?`Clientes VIP detectados:\n`+executiveData.topPuntualidad.filter(c=>c.vip).map(c=>`• ${c.nombre} · Puntualidad ${c.puntualidad}%`).join("\n"):"No hay clientes VIP detectados aún.";
   }
   else if(lower.includes("top 10")||lower.includes("ranking")||lower.includes("mayor facturación")||lower.includes("mayor facturacion")){
@@ -664,8 +690,33 @@ function addTask(){
 }
 function toggleTask(id){setData({...data,tasks:(data.tasks||[]).map(t=>t.id===id?{...t,done:!t.done}:t)})}
 function deleteTask(id){setData({...data,tasks:(data.tasks||[]).filter(t=>t.id!==id)})}
+
+function saveCommitment(){
+  if(!commitmentForm.clienteId||!commitmentForm.facturaId||!commitmentForm.monto){alert("Complete cliente, factura y monto del compromiso.");return;}
+  setData({...data,commitments:[{...commitmentForm,id:Date.now(),clienteId:+commitmentForm.clienteId,facturaId:+commitmentForm.facturaId,monto:+commitmentForm.monto},...(data.commitments||[])]});
+  setCommitmentForm({clienteId:"",facturaId:"",fecha:today(),monto:"",observacion:"",estado:"Pendiente"});
+}
+function toggleCommitmentStatus(id,status){
+  setData({...data,commitments:(data.commitments||[]).map(c=>c.id===id?{...c,estado:status}:c)});
+}
+function deleteCommitment(id){
+  setData({...data,commitments:(data.commitments||[]).filter(c=>c.id!==id)});
+}
+function saveCollectionAction(){
+  if(!collectionForm.clienteId||!collectionForm.tipo){alert("Seleccione cliente y tipo de gestión.");return;}
+  setData({...data,collectionActions:[{...collectionForm,id:Date.now(),clienteId:+collectionForm.clienteId,facturaId:collectionForm.facturaId?+collectionForm.facturaId:""},...(data.collectionActions||[])]});
+  setCollectionForm({clienteId:"",facturaId:"",fecha:today(),tipo:"Llamado",resultado:"No contesta",proximaGestion:today(),responsable:"",observacion:""});
+}
+function deleteCollectionAction(id){
+  setData({...data,collectionActions:(data.collectionActions||[]).filter(a=>a.id!==id)});
+}
+function saveCollectionGoal(){
+  const amount=+goalAmount||0;
+  setData({...data,collectionGoal:{month:selectedMonth,amount}});
+  alert("Meta de cobranza guardada.");
+}
 if(!logged)return <Login onLogin={()=>setLogged(true)}/>;
-return <div className="app"><aside><Logo/><div className="admin"><User size={24}/><div><b>Administrador</b><p>admin@gpsruta.cl</p></div></div><nav>{[["dashboard","Dashboard",Eye],["clientes","Clientes",Users],["facturas","Facturas por cobrar",FileText],["deudas","Deudas / Facturas por pagar",CreditCard],["ingresos","Ingresos",TrendingUp],["egresos","Egresos",TrendingDown],["alertas","Cobros / Recordatorios",Bell]].map(([v,l,I])=><button key={v} onClick={()=>setTab(v)} className={tab===v?"active":""}><I size={20}/>{l}</button>)}</nav><div className="autosave"><CheckCircle size={20}/><div><b>Guardado automático activo</b><p>Último guardado: {saved}</p></div></div><button className="logout" onClick={()=>{sessionStorage.removeItem(SESSION);setLogged(false)}}><LogOut size={19}/>Cerrar sesión</button></aside><main><header><div className="search"><Search size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente, factura o giro..."/></div><div className="chips"><select value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)} className="monthSelect">{months.map(m=><option key={m} value={m}>{ml(m)}</option>)}</select><span><CalendarDays size={17}/>{clock.toLocaleDateString("es-CL")}</span><span><Clock size={17}/>{clock.toLocaleTimeString("es-CL",{hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span className="green"><Save size={17}/>Guardado automático</span></div></header>
+return <div className="app"><aside><Logo/><div className="admin"><User size={24}/><div><b>Administrador</b><p>admin@gpsruta.cl</p></div></div><nav>{[["dashboard","Dashboard",Eye],["clientes","Clientes",Users],["facturas","Facturas por cobrar",FileText],["deudas","Deudas / Facturas por pagar",CreditCard],["ingresos","Ingresos",TrendingUp],["egresos","Egresos",TrendingDown],["alertas","Cobros / Recordatorios",Bell],["compromisos","Compromisos de Pago",CalendarCheck],["gestiones","Gestión de Cobranza",ClipboardCheck]].map(([v,l,I])=><button key={v} onClick={()=>setTab(v)} className={tab===v?"active":""}><I size={20}/>{l}</button>)}</nav><div className="autosave"><CheckCircle size={20}/><div><b>Guardado automático activo</b><p>Último guardado: {saved}</p></div></div><button className="logout" onClick={()=>{sessionStorage.removeItem(SESSION);setLogged(false)}}><LogOut size={19}/>Cerrar sesión</button></aside><main><header><div className="search"><Search size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente, factura o giro..."/></div><div className="chips"><select value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)} className="monthSelect">{months.map(m=><option key={m} value={m}>{ml(m)}</option>)}</select><span><CalendarDays size={17}/>{clock.toLocaleDateString("es-CL")}</span><span><Clock size={17}/>{clock.toLocaleTimeString("es-CL",{hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span className="green"><Save size={17}/>Guardado automático</span></div></header>
 <section className="backupToolbar">
   <button className="backupBtn saveManual" onClick={manualSave}><HardDrive size={17}/>Guardar ahora</button>
   <button className="backupBtn" onClick={exportBackup}><Download size={17}/>Respaldar</button>
@@ -799,6 +850,26 @@ return <div className="app"><aside><Logo/><div className="admin"><User size={24}
     </div>
   </div>
 </section>}
+
+{tab==="dashboard"&&<section className="cobranzaGestionProPanel">
+  <div className="card holoCard goalPanel">
+    <div className="holoBadge small">META COBRANZA</div>
+    <h2>Meta de cobranza mensual</h2>
+    <div className="goalEdit"><input type="number" value={goalAmount} onChange={e=>setGoalAmount(e.target.value)} placeholder="Meta mensual"/><button onClick={saveCollectionGoal}>Guardar meta</button></div>
+    <div className="goalProgress"><div style={{width:`${Math.min(100,cobranzaProData.goalPercent)}%`}}></div></div>
+    <div className="goalNumbers"><b>{cobranzaProData.goalPercent}%</b><span>Cobrado {money(cobranzaProData.collected)} de {money(cobranzaProData.goalAmount)}</span></div>
+  </div>
+  <div className="card holoCard commitmentPanel">
+    <div className="holoBadge small">COMPROMISOS</div>
+    <h2>Compromisos de pago</h2>
+    <div className="commitmentKpis"><div><b>{cobranzaProData.dueToday.length}</b><span>Hoy</span></div><div><b>{cobranzaProData.overdue.length}</b><span>Vencidos</span></div><div><b>{money(cobranzaProData.committedAmount)}</b><span>Monto mes</span></div></div>
+  </div>
+  <div className="card holoCard collectionMiniPanel">
+    <div className="holoBadge small">GESTIÓN</div>
+    <h2>Gestión de cobranza</h2>
+    <div className="commitmentKpis"><div><b>{cobranzaProData.pendingActions.length}</b><span>Pendientes</span></div><div><b>{cobranzaProData.promised.length}</b><span>Promete pago</span></div><div><b>{cobranzaProData.noResponse.length}</b><span>No contesta</span></div></div>
+  </div>
+</section>}
 {tab==="clientes"&&<section className="two"><div className="card clientFormSticky"><h2>{editingClient?"Editar cliente":"Nuevo cliente"}</h2>
 <div className="excelImportBox">
   <label className="excelBtn">📥 Cargar clientes desde Excel
@@ -842,6 +913,32 @@ return <div className="app"><aside><Logo/><div className="admin"><User size={24}
   <div className="reminderCount"><b>{alertInvoices.length}</b><span>alertas</span></div>
 </div>
 <div className="reminderList compactList">{alertInvoices.map(inv=>{let c=client(inv.clienteId),s=ist(inv),Icon=s.I;return <button key={inv.id} className={`reminder compactReminder ${selectedInvoice?.id===inv.id?"selected":""}`} onClick={()=>setSelectedInvoiceId(inv.id)}><Icon className={s.c} size={20}/><div><b>{inv.factura}</b><p>{c?.nombre}</p></div><strong>{money(inv.monto)}</strong><small>{inv.vencimiento}</small></button>})}</div></div><div className="card attach stickyCobroAction"><h2><Paperclip size={20}/>Adjuntar factura</h2>{selectedInvoice?<><div className="selected"><b>{selectedInvoice.factura}</b><p>{selectedClient?.nombre} · {money(selectedInvoice.monto)}</p><small className="requiredAttach">Para usar Enviar factura, primero debe adjuntar la factura. El recordatorio no requiere adjunto.</small></div><label className="drop"><UploadCloud size={32}/><b>Buscar factura en mi PC</b><small>PDF, JPG, PNG, DOCX, XLSX</small><input type="file" onChange={e=>attachFile(selectedInvoice.id,e.target.files?.[0])}/></label>{data.attachments?.[selectedInvoice.id]&&<div className="fileBox"><FileText size={22}/><div><b>{data.attachments[selectedInvoice.id].name}</b><p>{(data.attachments[selectedInvoice.id].size/1024/1024).toFixed(2)} MB</p></div></div>}<div className="actions big"><div className="sendGroup"><b>Recordatorio</b><a className="send whatsapp" href={waReminder(selectedInvoice,selectedClient)} target="_blank"><W/>WhatsApp</a><a className="send mail" href={emailReminder(selectedInvoice,selectedClient)}><Mail size={18}/>Correo manual</a><button className="send autoMail" onClick={()=>sendAutoReminder(selectedInvoice,selectedClient)}>Enviar automático</button></div><div className="sendGroup"><b>Enviar factura</b><a className={`send whatsapp ${!data.attachments?.[selectedInvoice.id]?"disabled":""}`} href={data.attachments?.[selectedInvoice.id]?waInvoice(selectedInvoice,selectedClient):"#"} onClick={(e)=>{if(!canSendInvoice(selectedInvoice.id))e.preventDefault()}} target="_blank"><W/>WhatsApp</a><a className={`send mail ${!data.attachments?.[selectedInvoice.id]?"disabled":""}`} href={data.attachments?.[selectedInvoice.id]?emailInvoice(selectedInvoice,selectedClient):"#"} onClick={(e)=>{if(!canSendInvoice(selectedInvoice.id))e.preventDefault()}}><Mail size={18}/>Correo manual</a><button className={`send autoMail ${!data.attachments?.[selectedInvoice.id]?"disabled":""}`} onClick={()=>sendAutoInvoice(selectedInvoice,selectedClient)}>Enviar automático</button></div></div></>:<p>No hay facturas por cobrar.</p>}</div></section>}
+
+{tab==="compromisos"&&<section className="two">
+  <div className="card historyFormSticky"><h2>Nuevo compromiso de pago</h2>
+    <select value={commitmentForm.clienteId} onChange={e=>setCommitmentForm({...commitmentForm,clienteId:e.target.value,facturaId:""})}><option value="">Seleccionar cliente</option>{data.clients.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select>
+    <select value={commitmentForm.facturaId} onChange={e=>{let f=data.invoices.find(x=>+x.id===+e.target.value);setCommitmentForm({...commitmentForm,facturaId:e.target.value,monto:f?f.monto:commitmentForm.monto})}}><option value="">Seleccionar factura</option>{data.invoices.filter(i=>!commitmentForm.clienteId||+i.clienteId===+commitmentForm.clienteId).map(i=><option key={i.id} value={i.id}>{i.factura} · {money(i.monto)}</option>)}</select>
+    <Fields obj={commitmentForm} set={setCommitmentForm} fields={["fecha","monto","observacion"]}/>
+    <select value={commitmentForm.estado} onChange={e=>setCommitmentForm({...commitmentForm,estado:e.target.value})}><option>Pendiente</option><option>Cumplido</option><option>Incumplido</option></select>
+    <button className="primary" onClick={saveCommitment}>Guardar compromiso</button>
+  </div>
+  <div className="card compactHistoryCard"><h2>Historial de compromisos</h2>
+    <div className="commitmentList">{(data.commitments||[]).map(c=><div className={`commitmentItem ${c.estado.toLowerCase()}`} key={c.id}><div><b>{client(c.clienteId)?.nombre}</b><span>{data.invoices.find(i=>+i.id===+c.facturaId)?.factura} · {c.fecha} · {money(c.monto)}</span><small>{c.observacion}</small></div><div><button onClick={()=>toggleCommitmentStatus(c.id,"Cumplido")}>Cumplido</button><button onClick={()=>toggleCommitmentStatus(c.id,"Incumplido")}>Incumplido</button><button onClick={()=>deleteCommitment(c.id)}>Eliminar</button></div></div>)}</div>
+  </div>
+</section>}
+{tab==="gestiones"&&<section className="two">
+  <div className="card historyFormSticky"><h2>Nueva gestión de cobranza</h2>
+    <select value={collectionForm.clienteId} onChange={e=>setCollectionForm({...collectionForm,clienteId:e.target.value,facturaId:""})}><option value="">Seleccionar cliente</option>{data.clients.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</select>
+    <select value={collectionForm.facturaId} onChange={e=>setCollectionForm({...collectionForm,facturaId:e.target.value})}><option value="">Sin factura asociada</option>{data.invoices.filter(i=>!collectionForm.clienteId||+i.clienteId===+collectionForm.clienteId).map(i=><option key={i.id} value={i.id}>{i.factura} · {money(i.monto)}</option>)}</select>
+    <Fields obj={collectionForm} set={setCollectionForm} fields={["fecha","proximaGestion","responsable","observacion"]}/>
+    <select value={collectionForm.tipo} onChange={e=>setCollectionForm({...collectionForm,tipo:e.target.value})}><option>Llamado</option><option>WhatsApp</option><option>Correo</option><option>Visita</option></select>
+    <select value={collectionForm.resultado} onChange={e=>setCollectionForm({...collectionForm,resultado:e.target.value})}><option>No contesta</option><option>Solicita copia factura</option><option>Promete pago</option><option>Pagó</option><option>Revisar caso</option></select>
+    <button className="primary" onClick={saveCollectionAction}>Guardar gestión</button>
+  </div>
+  <div className="card compactHistoryCard"><h2>Historial de gestión</h2>
+    <div className="commitmentList">{(data.collectionActions||[]).map(a=><div className="commitmentItem" key={a.id}><div><b>{client(a.clienteId)?.nombre}</b><span>{a.tipo} · {a.resultado} · próxima {a.proximaGestion}</span><small>{a.observacion}</small></div><div><button onClick={()=>deleteCollectionAction(a.id)}>Eliminar</button></div></div>)}</div>
+  </div>
+</section>}
 </main></div>}
 function HistoryFilters({historyQuickFilter,setHistoryQuickFilter,historyMonthFilter,setHistoryMonthFilter,historyStatusFilter,setHistoryStatusFilter,historyMonths,showStatus=false}){
  return <div className="historyFilters"><input value={historyQuickFilter} onChange={e=>setHistoryQuickFilter(e.target.value)} placeholder="Buscar en historial..."/><select value={historyMonthFilter} onChange={e=>setHistoryMonthFilter(e.target.value)}>{historyMonths.map(m=><option key={m} value={m}>{m==="Todos"?"Todos los meses":ml(m)}</option>)}</select>{showStatus&&<select value={historyStatusFilter} onChange={e=>setHistoryStatusFilter(e.target.value)}><option>Todos</option><option>Pendiente</option><option>Pagada</option><option>Vencida</option></select>}<button onClick={()=>{setHistoryQuickFilter("");setHistoryMonthFilter("Todos");setHistoryStatusFilter("Todos")}}>Limpiar</button></div>}

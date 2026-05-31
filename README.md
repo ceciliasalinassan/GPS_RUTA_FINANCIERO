@@ -98,3 +98,5 @@ Agregado: auditoría automática, flujo de caja proyectado y calendario de cobra
 Agregado: Centro de Alertas Ejecutivas, Top 10 Clientes y Cliente VIP automático.
 
 Corrección aplicada: se agregaron los íconos faltantes CalendarCheck, ShieldAlert y ClipboardCheck para evitar el error visual del sistema.
+
+Agregado: compromisos de pago, meta de cobranza mensual y gestión/historial de cobranza.

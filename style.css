@@ -2155,3 +2155,120 @@ select:focus{
 @media(max-width:650px){
   .executiveAlertsPanel{grid-template-columns:1fr}
 }
+
+
+/* COMPROMISOS, META Y GESTIÓN DE COBRANZA */
+.cobranzaGestionProPanel{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:14px;
+  margin-top:16px;
+}
+.goalPanel,.commitmentPanel,.collectionMiniPanel{
+  min-height:245px;
+}
+.goalEdit{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+  position:relative;
+  z-index:2;
+  margin-bottom:14px;
+}
+.goalEdit button{
+  border:0;
+  border-radius:12px;
+  background:linear-gradient(135deg,#00ffd2,#7CFC00);
+  color:#001;
+  font-weight:900;
+  padding:0 12px;
+  cursor:pointer;
+}
+.goalProgress{
+  height:18px;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  overflow:hidden;
+  border:1px solid rgba(0,255,210,.22);
+}
+.goalProgress div{
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,#ff3131,#FFD43B,#7CFC00);
+  transition:.4s ease;
+}
+.goalNumbers{
+  margin-top:12px;
+}
+.goalNumbers b{
+  display:block;
+  color:#00ffd2;
+  font-size:34px;
+  text-shadow:0 0 14px rgba(0,255,210,.45);
+}
+.goalNumbers span{
+  color:#dff;
+  font-size:12px;
+}
+.commitmentKpis{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  position:relative;
+  z-index:2;
+}
+.commitmentKpis div{
+  border-radius:16px;
+  background:rgba(0,255,210,.055);
+  border:1px solid rgba(0,255,210,.20);
+  padding:12px;
+}
+.commitmentKpis b{
+  display:block;
+  color:#FFD43B;
+  font-size:22px;
+}
+.commitmentKpis span{
+  color:#dff;
+  font-size:11px;
+  text-transform:uppercase;
+}
+.commitmentList{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:calc(100vh - 250px);
+  overflow:auto;
+}
+.commitmentItem{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:10px;
+  border-radius:14px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(0,255,210,.14);
+}
+.commitmentItem b{display:block;color:#fff;font-size:13px}
+.commitmentItem span{display:block;color:#FFD43B;font-size:12px}
+.commitmentItem small{display:block;color:#bde;font-size:11px;margin-top:3px}
+.commitmentItem button{
+  margin:2px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;
+  background:rgba(255,255,255,.06);
+  color:#fff;
+  padding:6px 8px;
+  cursor:pointer;
+  font-size:11px;
+}
+.commitmentItem.cumplido{border-color:rgba(124,252,0,.32)}
+.commitmentItem.incumplido{border-color:rgba(255,49,49,.32)}
+@media(max-width:1180px){
+  .cobranzaGestionProPanel{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .commitmentKpis{grid-template-columns:1fr}
+  .commitmentItem{grid-template-columns:1fr}
+}
