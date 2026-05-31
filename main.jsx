@@ -1,7 +1,7 @@
 
 import React,{Component,useEffect,useMemo,useState}from"react";
 import{createRoot}from"react-dom/client";
-import{AlertTriangle,Bell,CalendarDays,CheckCircle,Clock,CreditCard,Edit,Eye,FileText,Lock,LogOut,Mail,Paperclip,Plus,Search,ShieldCheck,Trash2,TrendingDown,TrendingUp,UploadCloud,User,Users,Wallet,Save,Building2,MessageCircle,Bot,Sparkles,Download,Upload,HardDrive}from"lucide-react";
+import{AlertTriangle,Bell,CalendarDays,CheckCircle,Clock,CreditCard,Edit,Eye,FileText,Lock,LogOut,Mail,Paperclip,Plus,Search,ShieldCheck,Trash2,TrendingDown,TrendingUp,UploadCloud,User,Users,Wallet,Save,Building2,MessageCircle,Bot,Sparkles,Download,Upload,HardDrive,CalendarCheck,ShieldAlert,ClipboardCheck}from"lucide-react";
 import{ComposedChart,Bar,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid,PieChart,Pie,Cell,Legend,RadarChart,PolarGrid,PolarAngleAxis,PolarRadiusAxis,Radar}from"recharts";
 import * as XLSX from "xlsx";
 import"./style.css";
@@ -733,9 +733,9 @@ return <div className="app"><aside><Logo/><div className="admin"><User size={24}
   <div className="execAlert vip"><b>{executiveData.vip}</b><span>VIP</span></div>
 </section>}
 {tab==="dashboard"&&<section className="top10Panel">
-  <div className="card holoCard topCard"><div className="holoBadge small">TOP 10</div><h2>Mayor facturación</h2><div className="topList">{executiveData.topFacturacion.map((c,i)=><div className="topItem" key={c.id}><b>{i+1}</b><span>{c.nombre}</span><strong>{money(c.facturacion)}</strong></div>)}</div></div>
-  <div className="card holoCard topCard"><div className="holoBadge small">MOROSIDAD</div><h2>Mayor deuda</h2><div className="topList">{executiveData.topMorosidad.length?executiveData.topMorosidad.map((c,i)=><div className="topItem danger" key={c.id}><b>{i+1}</b><span>{c.nombre}</span><strong>{money(c.morosidad)}</strong></div>):<p>No hay morosidad registrada.</p>}</div></div>
-  <div className="card holoCard topCard"><div className="holoBadge small">VIP</div><h2>Puntualidad / Clientes VIP</h2><div className="topList">{executiveData.topPuntualidad.map((c,i)=><div className={`topItem ${c.vip?"vipClient":""}`} key={c.id}><b>{c.vip?"🏆":i+1}</b><span>{c.nombre}</span><strong>{c.puntualidad}%</strong></div>)}</div></div>
+  <div className="card holoCard topCard"><div className="holoBadge small">TOP 10</div><h2>Mayor facturación</h2><div className="topList">{(executiveData.topFacturacion||[]).map((c,i)=><div className="topItem" key={c.id}><b>{i+1}</b><span>{c.nombre}</span><strong>{money(c.facturacion)}</strong></div>)}</div></div>
+  <div className="card holoCard topCard"><div className="holoBadge small">MOROSIDAD</div><h2>Mayor deuda</h2><div className="topList">{executiveData.topMorosidad.length?(executiveData.topMorosidad||[]).map((c,i)=><div className="topItem danger" key={c.id}><b>{i+1}</b><span>{c.nombre}</span><strong>{money(c.morosidad)}</strong></div>):<p>No hay morosidad registrada.</p>}</div></div>
+  <div className="card holoCard topCard"><div className="holoBadge small">VIP</div><h2>Puntualidad / Clientes VIP</h2><div className="topList">{(executiveData.topPuntualidad||[]).map((c,i)=><div className={`topItem ${c.vip?"vipClient":""}`} key={c.id}><b>{c.vip?"🏆":i+1}</b><span>{c.nombre}</span><strong>{c.puntualidad}%</strong></div>)}</div></div>
 </section>}
 {tab==="dashboard"&&<section className="panelVencimientosPro">
   <div className="card holoCard vencimientosMain">

@@ -96,3 +96,5 @@ IA renombrada a LUXURY GPSRUTA.
 Agregado: auditoría automática, flujo de caja proyectado y calendario de cobranza.
 
 Agregado: Centro de Alertas Ejecutivas, Top 10 Clientes y Cliente VIP automático.
+
+Corrección aplicada: se agregaron los íconos faltantes CalendarCheck, ShieldAlert y ClipboardCheck para evitar el error visual del sistema.
